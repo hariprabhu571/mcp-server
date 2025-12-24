@@ -1,10 +1,32 @@
 const express = require("express");
 const app = express();
 
+/* -----------------------------
+   Middleware
+-------------------------------- */
 app.use(express.json());
 
 /* -----------------------------
-   1. MCP TOOLS DEFINITION
+   ROOT ENDPOINT (REQUIRED)
+   ChatGPT checks this first
+-------------------------------- */
+app.get("/", (req, res) => {
+  res.status(200).json({
+    name: "NomNom MCP Server",
+    status: "running"
+  });
+});
+
+/* -----------------------------
+   HEALTH CHECK (Render)
+-------------------------------- */
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+/* -----------------------------
+   MCP TOOLS DEFINITION
+   ChatGPT discovers tools here
 -------------------------------- */
 app.get("/tools", (req, res) => {
   res.json([
@@ -26,48 +48,45 @@ app.get("/tools", (req, res) => {
 });
 
 /* -----------------------------
-   2. MCP TOOL EXECUTION
+   MCP TOOL EXECUTION (SSE)
+   THIS IS THE IMPORTANT PART
 -------------------------------- */
 app.post("/mcp", (req, res) => {
+  // REQUIRED HEADERS FOR MCP
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
   const { tool, arguments: args } = req.body;
 
   if (tool === "listAvailableFoods") {
     const priceLimit = args?.priceLimit ?? 20;
 
-    return res.json({
+    const result = {
       items: [
         { name: "Veg Burger", price: 8.99 },
         { name: "Chicken Burger", price: 12.49 }
       ].filter(item => item.price <= priceLimit)
-    });
+    };
+
+    // Send SSE message
+    res.write(`data: ${JSON.stringify(result)}\n\n`);
+    res.end();
+    return;
   }
 
-  return res.status(400).json({
-    error: "Unknown tool"
-  });
+  // Unknown tool
+  res.write(
+    `data: ${JSON.stringify({ error: "Unknown tool" })}\n\n`
+  );
+  res.end();
 });
 
 /* -----------------------------
-   3. HEALTH CHECK
--------------------------------- */
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-/* -----------------------------
-   4. START SERVER
+   START SERVER
 -------------------------------- */
 const PORT = process.env.PORT || 3000;
-app.get("/", (req, res) => {
-  res.status(200).json({
-    name: "NomNom MCP Server",
-    status: "running"
-  });
-});
-
 
 app.listen(PORT, () => {
   console.log(`MCP server running on port ${PORT}`);
 });
-
-
