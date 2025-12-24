@@ -59,13 +59,15 @@ app.get("/health", (req, res) => {
 -------------------------------- */
 const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
     name: "NomNom MCP Server",
     status: "running"
   });
 });
 
+
 app.listen(PORT, () => {
   console.log(`MCP server running on port ${PORT}`);
 });
+
 
