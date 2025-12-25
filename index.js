@@ -3,102 +3,112 @@ const app = express();
 
 app.use(express.json());
 
-/* ===== MCP Tools List ===== */
-app.get("/sse", (req, res) => {
+/*************************************
+ * 1️⃣ MCP TOOL DEFINITIONS
+ *************************************/
+const tools = [
+  {
+    name: "ping",
+    description: "Test tool to verify MCP server connection.",
+    input_schema: {
+      type: "object",
+      properties: {
+        message: { type: "string" }
+      },
+      required: ["message"]
+    }
+  },
+  {
+    name: "getMenuItems",
+    description: "Mock: Get available menu for the brand",
+    input_schema: {
+      type: "object",
+      properties: {
+        brand: {
+          type: "string",
+          description: "Restaurant brand name"
+        }
+      },
+      required: ["brand"]
+    }
+  }
+];
+
+/*************************************
+ * 2️⃣ SSE STREAMING ENDPOINT (.well-known/mcp)
+ *************************************/
+app.get("/.well-known/mcp", (req, res) => {
+  console.log("🔌 ChatGPT connected via MCP SSE");
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  console.log("🔗 ChatGPT Connected via SSE");
-
-  function sendEvent(data) {
-    res.write(`event: mcp\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  }
-
-  // Initial handshake → tools.list will be called next
-  sendEvent({
+  // Required initial handshake event
+  res.write(`event: mcp\n`);
+  res.write(`data: ${JSON.stringify({
     jsonrpc: "2.0",
     method: "client.onConnect",
     params: {}
-  });
+  })}\n\n`);
 
-  const keepAlive = setInterval(() => {
-    sendEvent({
-      jsonrpc: "2.0",
-      method: "ping",
-      params: {}
-    });
+  // Keep connection open (heartbeat)
+  const interval = setInterval(() => {
+    res.write(`event: ping\ndata: {}\n\n`);
   }, 15000);
 
   req.on("close", () => {
-    clearInterval(keepAlive);
-    console.log("❌ ChatGPT Disconnected");
+    clearInterval(interval);
+    console.log("❌ ChatGPT disconnected");
   });
 });
 
-/* ===== Tools Definition ===== */
-app.post("/mcp", (req, res) => {
-  const { method, id, params } = req.body;
+/*************************************
+ * 3️⃣ MCP TOOL REQUEST — POST /execute
+ *************************************/
+app.post("/execute", (req, res) => {
+  const { tool, arguments: args } = req.body;
+  console.log("🔧 Tool Execute:", tool, args);
 
-  if (method === "tools.list") {
+  if (tool === "ping") {
     return res.json({
-      jsonrpc: "2.0",
-      id,
+      result: { reply: `pong: ${args.message}` }
+    });
+  }
+
+  if (tool === "getMenuItems") {
+    return res.json({
       result: {
-        tools: [
-          {
-            name: "ping",
-            description: "Test connectivity",
-            input_schema: {
-              type: "object",
-              properties: { message: { type: "string" }},
-              required: ["message"]
-            }
-          },
-          {
-            name: "getMenu",
-            description: "Get available sample food items",
-            input_schema: {
-              type: "object",
-              properties: {},
-              required: []
-            }
-          }
+        items: [
+          { id: "item001", name: "Classic Burger", price: 8.99 },
+          { id: "item002", name: "Cheese Burger", price: 10.49 },
+          { id: "item003", name: "Veggie Wrap", price: 7.99 }
         ]
       }
     });
   }
 
-  if (method === "tools.call") {
-    const { name, arguments: args } = params;
-
-    if (name === "ping") {
-      return res.json({
-        jsonrpc: "2.0",
-        id,
-        result: { reply: `PONG: ${args.message}` }
-      });
-    }
-
-    if (name === "getMenu") {
-      return res.json({
-        jsonrpc: "2.0",
-        id,
-        result: {
-          items: [
-            { name: "Classic Burger", price: 8.99 },
-            { name: "Cheese Burger", price: 10.49 },
-            { name: "Veggie Wrap", price: 7.99 }
-          ]
-        }
-      });
-    }
-  }
+  res.status(400).json({ error: "Unknown tool" });
 });
 
-/* ===== Start ===== */
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 MCP SSE server running on port ${PORT}`);
+/*************************************
+ * 4️⃣ GET /tools → ChatGPT uses this
+ *************************************/
+app.get("/tools", (req, res) => {
+  res.json(tools);
 });
+
+/*************************************
+ * 5️⃣ Health + Root Check
+ *************************************/
+app.get("/", (req, res) => {
+  res.send("MCP Server Live");
+});
+
+app.get("/health", (req, res) => res.json({ status: "ok" }));
+
+/*************************************/
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log(`🚀 MCP server running at port ${PORT}`)
+);
