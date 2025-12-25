@@ -162,4 +162,9 @@ if (tool === "findMealsForGroup") {
    4️⃣ Start Server
 ----------------------------------------- */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`MCP server running on port ${PORT}`));
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`MCP server running on port ${PORT}`);
+});
+
+
