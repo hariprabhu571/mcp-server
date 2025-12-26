@@ -4,8 +4,9 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
-import { Server } from "@modelcontextprotocol/sdk/server";
-import { ServerWebSocketTransport } from "@modelcontextprotocol/sdk/transport/websocket/server";
+import { Server } from "@modelcontextprotocol/sdk/dist/server/server.js";
+import { ServerWebSocketTransport } from "@modelcontextprotocol/sdk/dist/transport/websocket/server.js";
+
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,4 +80,5 @@ app.on("upgrade", (req, socket, head) => {
 
 console.log("🚀 MCP BMI server is ready!");
 console.log("🛰 WebSocket WS endpoint: /ws");
+
 
