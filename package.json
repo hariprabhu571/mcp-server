@@ -6,7 +6,7 @@
     "node": "20.x"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^0.4.0",
     "ws": "^8.15.1",
     "express": "^4.19.2",
     "cors": "^2.8.5"
