@@ -1,0 +1,24 @@
+{
+  "name": "BMI Calculator MCP",
+  "id": "bmi-mcp-server",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "calculate_bmi",
+      "description": "Calculate BMI using weight (kg) and height (meters).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "weight": { "type": "number" },
+          "height": { "type": "number" }
+        },
+        "required": ["weight", "height"]
+      }
+    }
+  ],
+  "connect": {
+    "websocket": {
+      "url": "wss://RENDER-URL/ws"
+    }
+  }
+}
